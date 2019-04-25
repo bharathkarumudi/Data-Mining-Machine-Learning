@@ -18,7 +18,7 @@ knitr::opts_chunk$set(echo = TRUE)
 a. If the term occurs in only one document, then it will have maximum weight.  
    If the term occurs in ever document, then it will have zero weight.
    
-b. The purpose of this transformation is that the terms that ocuur in every document has no much significance to differentiate one document from another.
+b. The purpose of this transformation is that the terms that occur in every document has no much significance to differentiate one document from another.
 
 ## 2. 
 
