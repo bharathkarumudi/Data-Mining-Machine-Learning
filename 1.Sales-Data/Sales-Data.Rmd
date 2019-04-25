@@ -1,0 +1,158 @@
+---
+title: "Assignment1"
+author: "Bharath Karumudi"
+date: "4/24/2019"
+output: 
+  html_document:
+    keep_md: true
+  
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1.
+
+![](q1.png) 
+
+a. If the term occurs in only one document, then it will have maximum weight.  
+   If the term occurs in ever document, then it will have zero weight.
+   
+b. The purpose of this transformation is that the terms that ocuur in every document has no much significance to differentiate one document from another.
+
+## 2. 
+
+#### Setting up the Libraries and data
+```{r Data Setup, message=FALSE, warning=FALSE}
+library(readxl)
+library(ggplot2)
+library(dplyr)
+Sales <- read_excel("Sales.xlsx")
+```
+
+### a. Sales by year and product in a stacked graph
+
+```{r Q2a}
+d1 <- Sales %>%
+  select(year, category, product, amount) 
+
+Sales_by_yr_product <- with(d1, d1[order(year),])
+
+Q2a <- ggplot(data=Sales_by_yr_product, aes(x=product, y=amount, fill = year)) + geom_bar(stat="identity") +
+  scale_y_continuous(breaks = 10^8)
+```
+
+```{r Q2a Plot}
+plot(Q2a)
+```
+
+### b. Sales by product in a pie chart
+
+```{r Q2b}
+Sales_by_product <- Sales %>%
+  group_by(product) %>%
+  summarise(amount = sum(amount))
+
+Q2b <- ggplot(Sales_by_product, aes(x="", y=amount, fill=product)) +
+  geom_bar(width = 1, stat = "identity") + 
+  scale_y_continuous(breaks=10^6) + 
+  coord_polar("y", start=0) +
+  labs(x="",y="Sales")
+```
+
+```{r Q2b Plot}
+plot(Q2b)
+```
+
+### c. Avg. sales across the states in a bar graph
+
+```{r Q2c}
+avg_sales_state <- Sales %>%
+  group_by(st) %>%
+  arrange(country) %>%
+  summarise(avg_sales = mean(amount))
+
+Q2c <- ggplot(avg_sales_state, aes(x=st, y=avg_sales, fill=avg_sales)) + geom_col() + labs(x="State", y="Avg. Sales ($)")
+```
+
+```{r Q2cplot}
+plot(Q2c)
+```
+
+
+### d. Sales comparision between states in 2013 and 2014 using faceting
+
+``` {r Q2d}
+d2 <- with(Sales, Sales[order(year, amount, state),])
+
+Q2d <- ggplot(data=d2, aes(x=state, y=amount, fill=amount)) + 
+  geom_bar(stat="identity") + 
+  facet_grid(~year) +
+  scale_y_continuous(breaks = 10^8)
+```
+
+```{r Q2d Plot}
+plot(Q2d)
+```
+
+
+### e. 2013, 2014 month wise sales comparision - line graph
+
+``` {r Q2e}
+d3 <- Sales %>%
+  select(mo, year, amount) 
+
+d4 <- d3 %>%
+  group_by(mo, year) %>%
+  arrange(mo) %>%
+  summarise(sales = sum(amount))
+
+
+Q2e <- ggplot(data = d4, aes(x = mo, y = sales, group = year, colour=year)) + 
+  geom_line() +
+  geom_point() +
+  scale_x_discrete(breaks = Sales$month) + theme(legend.position = "right",
+        legend.title = element_blank()) 
+```
+
+```{r Q2e Plot}
+plot(Q2e)
+```
+
+## 3. Multidimensional Cube
+
+#### Building the cube on Product, Month, Year and State:
+```{r Cube Setup}
+mul_cube <- tapply(Sales$amount, 
+                       Sales[,c("product", "month", "year", "st")], 
+                       FUN=function(x){return(sum(x))})
+```
+
+
+### 1. Slice operation: compute the revenue for Laptop during January of 2013 in each state.
+```{r Slice}
+mul_cube ["Laptop", "Jan", "2013", ]
+```
+
+### 2. Dice operation: compute the revenue for the furniture products (Mattress and Chair) during the second quarter (April, May and June) of 2014 in each state.
+
+```{r Dice}
+mul_cube [c("Mattress","Chair"), 
+             c("Apr","May","Jun"), 
+             "2014", ]
+```
+
+### 3. Rollup operation: compute the annual revenue for each product and collapse the state and month dimensions.
+
+```{r Rollup}
+apply(mul_cube, c("year", "product"),
+      FUN=function(x) {return(sum(x, na.rm=TRUE))})
+```
+
+### 4. Drilldown operation: compute the annual and monthly revenue for each product and collapse the state dimension.
+
+```{r Drilldown}
+apply(mul_cube, c("year", "month", "product"), 
+      FUN=function(x) {return(sum(x, na.rm=TRUE))})
+```
