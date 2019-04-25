@@ -48,7 +48,7 @@ Q2a <- ggplot(data=Sales_by_yr_product, aes(x=product, y=amount, fill = year)) +
 plot(Q2a)
 ```
 
-![](Sales-Data_files/figure-html/Q2a Plot-1.png)<!-- -->
+![](Sales-Data_files/figure-html/Q2aplot-1.png)<!-- -->
 
 ### b. Sales by product in a pie chart
 
@@ -70,7 +70,7 @@ Q2b <- ggplot(Sales_by_product, aes(x="", y=amount, fill=product)) +
 plot(Q2b)
 ```
 
-![](Sales-Data_files/figure-html/Q2b Plot-1.png)<!-- -->
+![](Sales-Data_files/figure-html/Q2bplot-1.png)<!-- -->
 
 ### c. Avg. sales across the states in a bar graph
 
@@ -109,7 +109,7 @@ Q2d <- ggplot(data=d2, aes(x=state, y=amount, fill=amount)) +
 plot(Q2d)
 ```
 
-![](Sales-Data_files/figure-html/Q2d Plot-1.png)<!-- -->
+![](Sales-Data_files/figure-html/Q2dplot-1.png)<!-- -->
 
 
 ### e. 2013, 2014 month wise sales comparision - line graph

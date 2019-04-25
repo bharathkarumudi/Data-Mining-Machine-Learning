@@ -43,7 +43,7 @@ Q2a <- ggplot(data=Sales_by_yr_product, aes(x=product, y=amount, fill = year)) +
   scale_y_continuous(breaks = 10^8)
 ```
 
-```{r Q2a Plot}
+```{r Q2aplot}
 plot(Q2a)
 ```
 
@@ -61,7 +61,7 @@ Q2b <- ggplot(Sales_by_product, aes(x="", y=amount, fill=product)) +
   labs(x="",y="Sales")
 ```
 
-```{r Q2b Plot}
+```{r Q2bplot}
 plot(Q2b)
 ```
 
@@ -92,7 +92,7 @@ Q2d <- ggplot(data=d2, aes(x=state, y=amount, fill=amount)) +
   scale_y_continuous(breaks = 10^8)
 ```
 
-```{r Q2d Plot}
+```{r Q2dplot}
 plot(Q2d)
 ```
 
