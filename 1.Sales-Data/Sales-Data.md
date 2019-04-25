@@ -137,7 +137,7 @@ Q2e <- ggplot(data = d4, aes(x = mo, y = sales, group = year, colour=year)) +
 plot(Q2e)
 ```
 
-![](Sales-Data_files/figure-html/Q2e Plot-1.png)<!-- -->
+![](Sales-Data_files/figure-html/Q2eplot-1.png)<!-- -->
 
 ## 3. Multidimensional Cube
 

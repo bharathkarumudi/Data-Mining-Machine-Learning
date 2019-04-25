@@ -116,7 +116,7 @@ Q2e <- ggplot(data = d4, aes(x = mo, y = sales, group = year, colour=year)) +
         legend.title = element_blank()) 
 ```
 
-```{r Q2e Plot}
+```{r Q2eplot}
 plot(Q2e)
 ```
 
