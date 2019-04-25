@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## 1.
 
-![](q1.png) 
+![](Sales-Data_files/q1.png) 
 
 a. If the term occurs in only one document, then it will have maximum weight.  
    If the term occurs in ever document, then it will have zero weight.
@@ -28,7 +28,7 @@ b. The purpose of this transformation is that the terms that ocuur in every docu
 library(readxl)
 library(ggplot2)
 library(dplyr)
-Sales <- read_excel("Sales.xlsx")
+Sales <- read_excel("Sales-Data_files/Sales.xlsx")
 ```
 
 ### a. Sales by year and product in a stacked graph
