@@ -29,7 +29,7 @@ Experiment with different ANN architectural parameters (e.g. number of hidden la
 # install.packages("C50")
 # install.packages("randomForest")
 # install.packages("nnet")
-# install.packages("rattle")
+# install.packages("RRF")
 ```
 
 ### Load the required libraries
@@ -278,7 +278,7 @@ predictors(rfe_method)
 plot(rfe_method, type=c("g", "o"))
 ```
 
-![](Educational_data_R_files/figure-html/RFE_model-1.png)<!-- -->
+![](Q2_files/figure-html/RFE_model-1.png)<!-- -->
 
 ### Train an rpart model to compute variable importance
 
@@ -322,14 +322,45 @@ print(rpartImp)
 ### Train an RRf model to compute variable importance 
 
 ```r
-# 
-# set.seed(1234)
-# rrfModel <- train(Class ~ ., data=educational_dataset, method="RRF")
-# rrfImp <- varImp(rrfModel, scale=F)
-# rrfImp
-# 
-# plot(rrfImp, top = 20, main='Variable Importance')
+set.seed(1234)
+rrfModel <- train(Class ~ ., data=educational_dataset, method="RRF")
+rrfImp <- varImp(rrfModel, scale=F)
+rrfImp
 ```
+
+```
+## RRF variable importance
+## 
+##   only 20 most important variables shown (out of 60)
+## 
+##                              Overall
+## VisITedResources              77.417
+## StudentAbsenceDaysUnder-7     53.795
+## raisedhands                   37.892
+## AnnouncementsView             30.954
+## Discussion                    21.755
+## RelationMum                   13.461
+## ParentAnsweringSurveyYes       8.063
+## genderM                        6.833
+## ParentschoolSatisfactionGood   4.223
+## NationalITySaudiArabia         3.981
+## NationalITyJordan              2.608
+## TopicChemistry                 2.492
+## TopicMath                      2.426
+## TopicGeology                   2.352
+## StageIDlowerlevel              2.228
+## TopicEnglish                   2.187
+## SectionIDB                     2.117
+## GradeIDG-06                    2.097
+## GradeIDG-08                    2.062
+## PlaceofBirthJordan             1.948
+```
+
+```r
+plot(rrfImp, top = 20, main='Variable Importance')
+```
+
+![](Q2_files/figure-html/rrf_model-1.png)<!-- -->
 
 ### Pre-processing the data
 

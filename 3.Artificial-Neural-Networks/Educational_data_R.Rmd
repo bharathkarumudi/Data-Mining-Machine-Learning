@@ -30,8 +30,7 @@ Experiment with different ANN architectural parameters (e.g. number of hidden la
 # install.packages("C50")
 # install.packages("randomForest")
 # install.packages("nnet")
-# install.packages("rattle")
-
+# install.packages("RRF")
 ```
 
 ### Load the required libraries
@@ -89,13 +88,13 @@ print(rpartImp)
 
 ### Train an RRf model to compute variable importance 
 ```{r rrf_model}
-# 
-# set.seed(1234)
-# rrfModel <- train(Class ~ ., data=educational_dataset, method="RRF")
-# rrfImp <- varImp(rrfModel, scale=F)
-# rrfImp
-# 
-# plot(rrfImp, top = 20, main='Variable Importance')
+
+set.seed(1234)
+rrfModel <- train(Class ~ ., data=educational_dataset, method="RRF")
+rrfImp <- varImp(rrfModel, scale=F)
+rrfImp
+
+plot(rrfImp, top = 20, main='Variable Importance')
 ```
 
 ### Pre-processing the data
