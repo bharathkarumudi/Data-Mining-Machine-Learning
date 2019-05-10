@@ -1,0 +1,158 @@
+---
+title: "Federalist Disputed Essays Analysis"
+author: "Bharath Karumudi"
+date: "5/4/2019"
+output:
+  pdf_document: default
+  html_document:
+    keep_md: yes
+---
+
+## Introduction: 
+The Federalist Paper data set (Disputed_Essay_data.CSV) is provided. 
+The features are a set of “function words”, for example, “upon”. The feature value is the percentage of the word occurrence in an essay. 
+For example, for the essay “Hamilton_fed_31.txt”, if the function word “upon” appeared 3 times, and the total number of words in this essay is 1000,  the feature value is 3/1000=0.3%
+
+## Objective: 
+We would like to build a machine learning model that is able to predict the author for the disputed essays; whether is is Hamilton or Madison?
+
+Dataset: Disputed_Essay_data.csv  
+Model of choice: Decision Tree  
+Metric to optimize: Gini  
+Model selection criteria: Accuracy  
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Install packages 
+  (if not already installed).
+
+```{r install_packages}
+#install.packages('rpart.plot')
+#install.packages('dplyr', dependencies = TRUE)
+#install.packages('caret', dependencies = TRUE)
+#install.packages('rattle', dependencies = TRUE)
+```
+
+## Load the required libraries
+
+```{r Load_Libraries}
+library(rpart, warn.conflicts=F)
+library(rpart.plot, warn.conflicts=F)
+library(dplyr, warn.conflicts=F)
+library(caret, warn.conflicts=F)
+library(rattle, warn.conflicts=F)
+```
+
+## Loading the Dataset
+
+``` {r Load_dataset}
+Disputed_Essay_data <- read.csv("Disputed_Essay_data.csv")
+
+cat('Data Dimensions are: ')
+dim(Disputed_Essay_data)
+```
+
+### Let's see how the data looks like:
+
+``` {r view_data}
+head(Disputed_Essay_data) 
+```
+
+```{r view_data_2}
+table(Disputed_Essay_data$author)
+cat('Summary of the data:')
+summary(Disputed_Essay_data) 
+```
+
+From above, we can see that there is class imbalance in the dataset. We will have to program our model to learn this skewed distribution in the data. 
+
+Baseline_model can be a model that always predicts Hamilton. This model will have a performance of *71.83%* accuracy (Trained over 51 + 5 + 15 records; i.e. all records for each author exlcuding mixed authors)
+
+
+### Preprocessing of data
+```{r pre_processing}
+filter_auths <- c("dispt", "HM", "Jay")    
+
+non_dispute_data <- select(Disputed_Essay_data, -one_of("filename")) %>%
+  filter(!author %in% filter_auths) %>%
+  droplevels()
+
+dispute_data <- select(Disputed_Essay_data, -one_of("filename")) %>%
+  filter(author=="dispt")%>%
+  droplevels()
+
+cat('Authors in Non-dispute data:')
+table(non_dispute_data$author)
+
+```
+
+### Lets split the non-disputed data for training and testing
+We train on the train dataset and keep the test dataset to evaluate the performance of our model or select the model towards the very end. We choose train and test as 60% and 40% of entire dataset.
+
+```{r split_data_sets}
+
+sample_size <- floor(0.60 * nrow(non_dispute_data))
+set.seed(123)
+train_ind <- sample(seq_len(nrow(non_dispute_data)), size = sample_size)
+
+train_dataset <- non_dispute_data[train_ind, ]
+test_dataset <- non_dispute_data[-train_ind, ]
+
+```
+
+### Building the decision tree model using cross validation 
+
+
+```{r Cross_validation}
+
+tr_control <- trainControl(method = "cv", number = 3)
+
+dt_model_cv <- train(author ~.,
+                 data = non_dispute_data,
+                 method = "rpart",
+                 metric = "Accuracy",
+                 control = rpart.control(minsplit = 10, maxdepth = 2, cp = 0.01),
+                 trControl = tr_control)
+
+modelLookup('rpart')
+```
+
+### Plotting the Model
+
+```{r Cross_Validation_Plot}
+
+fancyRpartPlot(dt_model_cv$finalModel)
+
+```
+
+### Test the model
+
+``` {r Evaluation_Testdata}
+predict_model <- predict(dt_model_cv, test_dataset, type = "raw")
+#predict_model
+confusionMatrix(table(test_dataset[,1], predict_model))
+```
+
+As we seen above, the model prediction for test data is about 96.3%; which is better than Base line model.
+
+### Predicting the Disputed Authors
+
+``` {r Prediction_disputed}
+predict_model <- predict(dt_model_cv, dispute_data, type="raw")
+table(dispute_data[,1], predict_model)
+```
+
+
+### Conclusion
+
+With the model build, the model predicted that all the disputed essays are written by *Madison*.
+
+### References
+
+1. Treating class imabalance in decision tree
+2. Caret documentation
+3. Rpart documentation
+4. dplyr documentation
+5. Caret documentation

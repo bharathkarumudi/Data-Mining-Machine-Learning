@@ -1,0 +1,173 @@
+---
+title: "Educational data Mining using ANN"
+author: "Bharath Karumudi"
+date: "5/6/2019"
+output:
+  html_document:
+    keep_md: yes
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Introduction
+A kaggle dataset on student academic performance (available through https://www.kaggle.com/aljarah/xAPI-Edu-Data) is gathered to identify the influential factors for students’ performance.
+
+To predict the students’ performance, the collected data was organized into four kinds of features: demographic, academic background, parents’ participation on learning process and behavioral features.
+
+### Objective
+Experiment with different ANN architectural parameters (e.g. number of hidden layers, number of nodes within each layer) as well as model parameters (activation and loss functions, regularization, epoch/batch size, etc.). Evaluate and report the performance of ANN models.
+
+### Install required Packages
+    (if needed)
+
+```{r install_packages}
+# install.packages("ggplot2")
+# install.packages("lattice")
+# install.packages("caret")
+# install.packages("C50")
+# install.packages("randomForest")
+# install.packages("nnet")
+# install.packages("rattle")
+
+```
+
+### Load the required libraries
+
+```{r load_libraries, echo = T, results = 'hide'}
+library(ggplot2)
+library(lattice)
+library(caret)
+library(C50)
+library(randomForest)
+library(nnet)
+library(rattle)
+library(RRF)
+
+```
+
+### Loading the dataset
+
+```{r Load_data}
+educational_dataset <- read.csv("Students_Academic_Performance.csv" )
+
+cat("Let's see the data:")
+dim(educational_dataset)
+head(educational_dataset)
+summary(educational_dataset)
+```
+
+### RFE Model
+We can identify the attributes that are not required by using Recursive Feature Elimination method (RFE).
+
+```{r RFE_model}
+
+set.seed(1234)
+
+rfe_control_params <- rfeControl(functions=rfFuncs, method="cv", number=10)
+
+rfe_method<- rfe(educational_dataset[,1:16], educational_dataset[,17], sizes=c(1:17), rfeControl=rfe_control_params)
+print(rfe_method)
+predictors(rfe_method)
+plot(rfe_method, type=c("g", "o"))
+
+```
+
+### Train an rpart model to compute variable importance
+```{r rpart_model}
+
+# Train an rpart model and compute variable importance.
+set.seed(100)
+rPartMod <- train(Class ~ ., data=educational_dataset, method="rpart")
+rpartImp <- varImp(rPartMod)
+print(rpartImp)
+
+```
+
+
+### Train an RRf model to compute variable importance 
+```{r rrf_model}
+# 
+# set.seed(1234)
+# rrfModel <- train(Class ~ ., data=educational_dataset, method="RRF")
+# rrfImp <- varImp(rrfModel, scale=F)
+# rrfImp
+# 
+# plot(rrfImp, top = 20, main='Variable Importance')
+```
+
+### Pre-processing the data
+
+```{r prep-processing}
+
+# Check if there are any na values in the dataset.
+sum(is.na(educational_dataset))
+
+correlationMatrix <- cor(educational_dataset[,10:13])
+correlationMatrix
+findCorrelation(correlationMatrix, cutoff=0.75)
+# Removing the semester attribute
+educational_data <- educational_dataset[,-8]
+```
+
+
+### Sampling the data into Train and Test Datasets
+    using stratified sampling of 70% - 30%.
+
+```{r dataSampling}
+
+set.seed(1234)
+#Stratified Sampling 70%
+TrainingDataIndex <- createDataPartition(educational_data$Class, p=0.70, list = FALSE)
+
+#Training Data
+training_data <- educational_data[TrainingDataIndex,]
+
+#Test Data
+test_data <- educational_data[-TrainingDataIndex,]
+```
+
+
+
+### Building the Model with Artifical Neural Networks
+
+```{r Build_model, echo = T, results = 'hide'}
+#Train Params
+trcontrolparams <- trainControl(method = "repeatedcv", number = 5, repeats=8)
+
+## Building the Model with Neural Networks
+
+ANN_model <- train(training_data[,-17], training_data$Class,
+                   method = "nnet",
+                   trControl = trcontrolparams,
+                   preProcess = c("scale", "center"),
+                   na.action =  na.omit)
+
+modelLookup('nnet')
+```
+
+
+### Test the model with test dataset
+```{r test_model}
+ANN_predict <- predict(ANN_model, test_data)
+```
+
+
+### Validate the results
+```{r validate}
+confusionMatrix(ANN_predict, test_data$Class)
+```
+
+
+### Conclusion
+
+With the selected parameters, the ANN model is working with an accuracy of 1. The corelation matrix also given us the association between the variable.With this model it will help in predicting how students will perform based on the attributes and also what impacts them to fail.
+
+
+### References
+1. RRF documentation
+2. Randomforest documentation
+3. Artificial Neural Networks (ANN) library documentation
+4. Coorelation Matrix
