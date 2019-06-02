@@ -1,0 +1,289 @@
+---
+title: "Digit_Recognition"
+author: "Bharath Karumdi"
+date: "5/20/2019"
+output:
+  html_document:
+    keep_md: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+### Introduction
+The goal is to recognize digits 0 to 9 in handwriting images. This is a classification problem and applied three different algorithms to predict the MNIST handwritten digit database - SVM, naïve Bayes and kNN algorithms.
+
+**Data Sources**  
+Original data file: https://www.dropbox.com/s/npxk66fxruv09u5/Kaggle-digit-train.csv?dl=0  
+Original test data (51MB)   https://www.dropbox.com/s/3wnkss7x6m4pqgx/Kaggle-digit-test.csv?dl=0  
+
+**Sample data files**  
+small sample of training data (1.5MB): CSV:   https://www.dropbox.com/s/v7dncz0mqklayus/Kaggle-digit-train-sample-small-1400.csv?dl=0  
+small sample of test data (1000 examples): CSV:   https://www.dropbox.com/s/e5tokwdmkd8ggmm/Kaggle-digit-test-sample1000.csv?dl=0  
+
+
+### Objective
+We would like to build models using naïve Bayes, SVM and kNN algorithms to recognize digits 0 to 9 in handwriting images and provide the better model for this task.
+
+### Install Required packages
+```{r install_packages}
+#install.packages("caret")
+#install.packages("RColorBrewer")
+#install.packages("e1071")
+#install.packages("FNN")
+#install.packages("klaR")
+#install.packages("kernlab")
+#install.packages("naivebayes")
+```
+
+### Load required Libraries
+```{r Load_Libraries, results='hide',warning=FALSE}
+library(readr)
+library(caret)
+library(RColorBrewer)
+library(e1071)
+library(FNN)
+library(klaR)
+library(kernlab)
+library(naivebayes)
+
+```
+
+### Loading the dataset
+```{r load_data, warning=FALSE}
+#train <- read_csv("Kaggle-digit-train-sample-small-1400.csv")
+#test <- read_csv("Kaggle-digit-test-sample1000.csv")
+
+train <- read_csv("Kaggle-digit-train.csv")
+test <- read_csv("Kaggle-digit-test.csv")
+
+#Lets see the data
+dim(train); dim(test)
+head(train); head(test)
+```
+
+### Data Cleansing
+```{r data_cleansing, warning=FALSE}
+#Converting the "label" attribute to factor, is the digit that was drawn by the user. The rest of the columns contain the pixel-values of the associated image.
+train[, 1] <- as.factor(train[, 1]$label)  # As Category
+
+#All the other columns are numeric:
+head(sapply(train[1,], class))
+
+#Some columns contain zero for all observations or they have near zero variance. Lets remove these columns:
+
+train_orig <- train
+test_orig <- test
+nzv.data <- nearZeroVar(train, saveMetrics = TRUE)
+drop.cols <- rownames(nzv.data)[nzv.data$nzv == TRUE]
+train <- train[,!names(train) %in% drop.cols]
+test <- test[,!names(test) %in% drop.cols]
+```
+
+### Data Analysis
+```{r analysis, warning=FALSE}
+# Now, let’s do some exploratory data analysis. Reference(1).
+
+BNW <- c("white", "black")
+CUSTOM_BNW <- colorRampPalette(colors = BNW)
+
+par(mfrow = c(4, 3), pty = "s", mar = c(1, 1, 1, 1), xaxt = "n", yaxt = "n")
+images_digits_0_9 <- array(dim = c(10, 28 * 28))
+for (digit in 0:9) {
+  images_digits_0_9[digit + 1, ] <- apply(train_orig[train_orig[, 1] == digit, -1], 2, sum)
+  images_digits_0_9[digit + 1, ] <- images_digits_0_9[digit + 1, ]/max(images_digits_0_9[digit + 1, ]) * 255
+  z <- array(images_digits_0_9[digit + 1, ], dim = c(28, 28))
+  z <- z[, 28:1]
+  image(1:28, 1:28, z, main = digit, col = CUSTOM_BNW(256))
+}
+
+# More blurriness, more chance of misprediction. For example, 0 has a smooth and fully dark line but see how blurry is 9 or 4 or even 1. That means there is a higher chance of incorrect prediction of such numbers. We will explore this more in detail when we predict our validation data set. What is the proportion of each digit in the train set?
+
+CUSTOM_BNW_PLOT <- colorRampPalette(brewer.pal(10, "Set3"))
+LabTable <- table(train_orig$label)
+par(mfrow = c(1, 1))
+percentage <- round(LabTable/sum(LabTable) * 100)
+labels <- paste0(row.names(LabTable), " (", percentage, "%) ")
+pie(LabTable, labels = labels, col = CUSTOM_BNW_PLOT(10), main = "Percentage of Digits (Training Set)")
+```
+
+
+```{r build_datasets, warning=FALSE}
+# So, all digits contribute almost equally to the data set implying that the train set is appropriately randomly selected. 
+
+set.seed(12340)
+trainIndex <- createDataPartition(train$label, p = 0.1, list = FALSE, times = 1)
+allindices <- c(1:42000)
+training <- train[trainIndex,]
+
+validating <- train[-trainIndex,]
+vali0_index <- allindices[! allindices %in% trainIndex]
+validIndex <- createDataPartition(validating$label, p = 0.11, list = FALSE, times = 1)
+validating <- validating[validIndex,]
+original_validindex <- vali0_index[validIndex]
+
+```
+
+### Building the model using Naïve Bayes Algorithm
+```{r naive_bayes_model, warning=FALSE}
+#Lets build the model using Naïve Bayes
+model.naiveBayes <- naive_bayes(training$label ~., data = training)
+summary(model.naiveBayes)
+prediction.naiveBayes <- predict(model.naiveBayes, newdata = validating, type = "class")
+confusionMatrix(factor(prediction.naiveBayes), factor(validating$label))
+```
+
+
+```{r naive_train, warning=FALSE, results=FALSE}
+#Train the model.
+nbc <- trainControl(method = "cv", number = 4)
+modnb <- train(label ~. , data = training, method = "nb", trControl = nbc)
+
+```
+
+```{r naive_model, warning=FALSE}
+#Print model
+modnb
+```
+We can see the model has predicted with an accuracy of ~81%.
+
+
+### Building the model using SVM Algorithm
+```{r svm_model, warning=FALSE}
+
+#Train the model
+tc <- trainControl(method = "cv", number = 4, verboseIter = F, allowParallel = T)
+modSVMR1 <- train(label ~. , data= training, method = "svmRadial", trControl = tc)
+
+SVMRadial_predict1 <- as.numeric(predict(modSVMR1,newdata = validating))-1
+confusionMatrix(factor(SVMRadial_predict1), (validating$label))
+
+SVM06 <- which(SVMRadial_predict1 != validating$label & validating$label == 6)
+head(SVM06)
+```
+
+
+```{r SVM_examples_6F, warning=FALSE}
+# false prediction of 6
+
+rotate <- function(x) t(apply(x, 2, rev))
+par(mfrow = c(1, 3), pty ='s')
+for (i06 in 1:3){
+  m = rotate(matrix(unlist(train_orig[original_validindex[SVM06[i06]],-1]),ncol = 28,byrow = T))
+  image(m,col=CUSTOM_BNW(255), main = "SVM, false prediction of 6")  
+}
+```
+
+
+```{r SVM_examples_6T, warning=FALSE}
+# correctly prediction of 6
+
+SVM66 <- which(SVMRadial_predict1 == validating$label & validating$label == 6)
+par(mfrow = c(1, 3), pty ='s')
+for (i66 in 1:3){
+  m = rotate(matrix(unlist(train_orig[original_validindex[SVM66[i66]],-1]),ncol = 28,byrow = T))
+  image(m,col=CUSTOM_BNW(255), main = "SVM, true prediction of 6")  
+}
+```
+
+
+```{r changing_contrast, warning=FALSE}
+# Lets alter the contrast of the image. If the darkness (or the value) of a cell is increased, it is more likely that the cell is detected by a classifier. That means we boost the weak features
+
+power = 3
+Contrast <- function (DATASET, POWER) {
+  outDATASET <- cbind(DATASET$label, as.data.frame((DATASET[,-1]/255)^(POWER)*255))
+  names(outDATASET)[1] <- "label"  
+  outDATASET
+}
+
+train_orig_low_contrast <- Contrast(train_orig, 1/power) 
+train_orig_high_contrast <- Contrast(train_orig, power) 
+
+plotIndex = 4
+par(mfrow = c(1, 3), pty ='s')
+m = rotate(matrix(unlist(train_orig_low_contrast[plotIndex,-1]),ncol = 28,byrow = T))
+image(m,col=CUSTOM_BNW(255), main = "lower contrast")
+m = rotate(matrix(unlist(train_orig[plotIndex,-1]),ncol = 28,byrow = T))
+image(m,col=CUSTOM_BNW(255), main = "original")
+m = rotate(matrix(unlist(train_orig_high_contrast[plotIndex,-1]),ncol = 28,byrow = T))
+image(m,col=CUSTOM_BNW(255), main = "higher contrast")
+```
+
+
+```{r SVM_train, warning=FALSE}
+# Now, let’s repeat SVM training with the two new data sets and see if changing the contrast impacts SVM performance:
+
+training2   <- Contrast(training, 1/power)
+training3   <- Contrast(training,   power)
+validating2 <- Contrast(validating, 1/power)
+validating3 <- Contrast(validating, power)
+modSVMR2 <- train(label ~. , data= training2, method = "svmRadial", trControl = tc)
+SVMRadial_predict2 <- as.numeric(predict(modSVMR2,newdata = validating2))-1
+confusionMatrix(factor(SVMRadial_predict2), factor(validating2$label))
+
+modSVMR3 <- train(label ~. , data= training3, method = "svmRadial", trControl = tc)
+SVMRadial_predict3 <- as.numeric(predict(modSVMR3,newdata = validating3))-1
+confusionMatrix(factor(SVMRadial_predict3), factor(validating3$label))
+```
+
+
+```{r SVM_train2, warning=FALSE}
+#Binding the training datasets and running the model again.
+training4 <- rbind(training, training2, training3)
+modSVMR4 <- train(label ~. , data= training4, method = "svmRadial", trControl = tc)
+SVMRadial_predict4 <- as.numeric(predict(modSVMR4,newdata = validating2))-1
+confusionMatrix(factor(SVMRadial_predict4), factor(validating2$label))
+```
+
+About 95% is the accuracy we get by adding up “training2” (lower contrast) and “training3” (higher contrast) and original “training” set. 
+
+### Building model with KNN Model
+
+```{r knn_train, warning=FALSE}
+#Train the model
+ctrl <- trainControl(method="repeatedcv",repeats = 1, number = 4, verboseIter = T, allowParallel = T)
+knnFit <- train(label ~ ., data = training, method = "knn", trControl = ctrl)
+## Aggregating results
+## Selecting tuning parameters
+plot(knnFit)
+```
+
+
+```{r knn_predict, warning=FALSE}
+
+#we choose K=5. At first, kNN will be trained with three training sets: 
+#1) original “training” 2) “training2” (lower contrast) 3) “training3” (higher contrast).
+
+fnn.kd1 <- FNN::knn(training[,-1], validating[,-1], training$label, k=5, algorithm = c("kd_tree"))
+fnn.kd.pred1 <- as.numeric(fnn.kd1)-1
+fnn.kd2 <- FNN::knn(training2[,-1], validating2[,-1], training2$label, k=5, algorithm = c("kd_tree"))
+fnn.kd.pred2 <- as.numeric(fnn.kd2)-1
+fnn.kd3 <- FNN::knn(training3[,-1], validating3[,-1], training3$label, k=5, algorithm = c("kd_tree"))
+fnn.kd.pred3 <- as.numeric(fnn.kd3)-1
+confusionMatrix(factor(fnn.kd.pred1), factor(validating$label))
+confusionMatrix(factor(fnn.kd.pred2), factor(validating2$label))
+confusionMatrix(factor(fnn.kd.pred3), factor(validating3$label))
+```
+
+
+```{r knn_predict_cumm, warning=FALSE}
+fnn.kd4 <- FNN::knn(training4[,-1], validating2[,-1], training4$label, k=5, algorithm = c("kd_tree"))
+fnn.kd.pred4 <- as.numeric(fnn.kd4)-1
+confusionMatrix(factor(fnn.kd.pred4), factor(validating2$label))
+```
+
+We obtained higher accuracy ~94.5% combining three training sets. 
+Note that the lower-contrast data set is used for prediction. So far, SVM and FNN performed well, specially FNN which is much faster than SVM. Remember, when we train the models with the entire train set, we will get a better result (higher accuracy) on a larger test set. We will examine this at the end of this report. 
+
+
+### Conclusion
+
+Among the three models, KNN predicts with the highest accuracy. Not only FNN is the most accurate, it is the fastest too.
+
+### References
+1. http://rstudio-pubs-static.s3.amazonaws.com/6287_c079c40df6864b34808fa7ecb71d0f36.html 
+2. FNN documentation 
+3. klaR documentation
