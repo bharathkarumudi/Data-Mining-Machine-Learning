@@ -163,8 +163,8 @@ inspect(head(sort(rule1, by="lift", decreasing = T), 5))
 ##      age.group=(34.3,50.7]} => {pep=YES} 0.07666667  0.9583333 2.098540    46
 ```
 
-### Findings:  
-Below are the five findings from the association rule data mining. 
+### Findings and Recommendations:  
+Below are the five findings and recommendations from the association rule data mining. 
 
 #### #1.  
 
@@ -320,3 +320,7 @@ inspect(head(sort(rule3, by="count", decreasing = T), 5))
   Both above patterns have similar association. We can see that these patterns, where the customer has a child and has either current account or savings account have a more likely tendency to buy the PEP product. As, the attributes have a strong relationship (~84%) and fair probability of occurance (~14%) with a preditictive power of about 1.8.
   
   **Recommendation:** It is good to concentrate on these demographics and try to increase sales marketing and promoting the product for customers with bank accounts. They seem to have a more likely nature to purchase the PEP product and have the money for investments.
+
+
+### References
+1. Apriori documentation
