@@ -12,38 +12,34 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-### Introduction
+### Introduction:  
 Bank data was given and need to explore the bank data (bankdata.csv) and an accompanying description of the attributes and their values (bankdataDescription.doc). 
 
 The dataset contains attributes on each person’s demographics and banking information in order to determine they will want to obtain the new PEP (Personal Equity Plan).
 
-### Objective
+### Objective:  
 Objective of this is to perform Association Rule discovery on the dataset and describe the  association rule mining process and the resulting 5 interesting rules, each with their three items of explanation and recommendations.  
 For at least one of the rules, discuss the support, confidence and lift values and how they are interpreted in this data set.
 
-### Install Required Packages
+### Install Required Packages:  
 ```{r packages, results='hide'}
 #install.packages("arules")
 #install.packages("arulesViz")
 ```
 
-### Load Libraries
+### Load Libraries: 
 ```{r libraries, results='hide'}
 library(arules)
 library(arulesViz)
 ```
 
-### Load Data
+### Load Data: 
 ```{r load_data, warning=FALSE}
 data <- read.csv('Files/bankdata.csv')
 str(data)
 ```
 
-
-### Data Cleansing
-
-
-
+### Data Cleansing: 
 ```{r data_cleansing, warning=FALSE}
 #Converting age and income to Categorical Variables
 data$income.bracket <- cut(data$income, 3, labels = c("low", "med", "high"))
@@ -59,17 +55,16 @@ data <- data[,sapply(data, is.factor)]
 str(data)
 ```
 
-### Performing Association Rule Mining
-
+### Performing Association Rule Mining:  
 ```{r asso_rulemining}
 rule1 <- apriori(data = data, parameter = list(minlen=2, maxlen=100, supp = 0.05, conf=0.8), appearance = list(default="lhs", rhs=c("pep=NO", "pep=YES")))
 inspect(head(sort(rule1, by="lift", decreasing = T), 5))
 ```
 
-### Findings
+### Findings:  
 Below are the five findings from the association rule data mining. 
 
-#### #1. 
+#### #1.  
 
 If the customer age is between 34 and 50, has a child and also holds the current account, then it is most likely they will purchase PEP product.  
 

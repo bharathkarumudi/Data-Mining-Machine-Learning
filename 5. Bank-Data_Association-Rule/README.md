@@ -1,5 +1,5 @@
 ---
-title: "Bank Data ~ Association Rules"
+title: "Bank Data ~ Association Rules Mining"
 author: "Bharath Karumudi"
 date: "6/2/2019"
 output:
@@ -10,23 +10,23 @@ output:
 
 
 
-### Introduction
+### Introduction:  
 Bank data was given and need to explore the bank data (bankdata.csv) and an accompanying description of the attributes and their values (bankdataDescription.doc). 
 
 The dataset contains attributes on each person’s demographics and banking information in order to determine they will want to obtain the new PEP (Personal Equity Plan).
 
-### Objective
+### Objective:  
 Objective of this is to perform Association Rule discovery on the dataset and describe the  association rule mining process and the resulting 5 interesting rules, each with their three items of explanation and recommendations.  
 For at least one of the rules, discuss the support, confidence and lift values and how they are interpreted in this data set.
 
-### Install Required Packages
+### Install Required Packages:  
 
 ```r
 #install.packages("arules")
 #install.packages("arulesViz")
 ```
 
-### Load Libraries
+### Load Libraries: 
 
 ```r
 library(arules)
@@ -55,7 +55,7 @@ library(arulesViz)
 ## Loading required package: grid
 ```
 
-### Load Data
+### Load Data: 
 
 ```r
 data <- read.csv('Files/bankdata.csv')
@@ -78,11 +78,7 @@ str(data)
 ##  $ pep        : Factor w/ 2 levels "NO","YES": 2 1 1 1 1 2 2 1 1 1 ...
 ```
 
-
-### Data Cleansing
-
-
-
+### Data Cleansing: 
 
 ```r
 #Converting age and income to Categorical Variables
@@ -114,8 +110,7 @@ str(data)
 ##  $ age.group     : Factor w/ 3 levels "(18,34.3]","(34.3,50.7]",..: 2 2 3 1 3 3 1 3 2 3 ...
 ```
 
-### Performing Association Rule Mining
-
+### Performing Association Rule Mining:  
 
 ```r
 rule1 <- apriori(data = data, parameter = list(minlen=2, maxlen=100, supp = 0.05, conf=0.8), appearance = list(default="lhs", rhs=c("pep=NO", "pep=YES")))
@@ -168,10 +163,10 @@ inspect(head(sort(rule1, by="lift", decreasing = T), 5))
 ##      age.group=(34.3,50.7]} => {pep=YES} 0.07666667  0.9583333 2.098540    46
 ```
 
-### Findings
+### Findings:  
 Below are the five findings from the association rule data mining. 
 
-#### #1. 
+#### #1.  
 
 If the customer age is between 34 and 50, has a child and also holds the current account, then it is most likely they will purchase PEP product.  
 
