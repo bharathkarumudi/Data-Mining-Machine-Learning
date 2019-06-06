@@ -1,2 +1,2 @@
 # Data-Mining
-Experimenting Data Mining with R
+Lets Do data mining with R.
