@@ -37,7 +37,7 @@ library(factoextra)
 ### Load the dataset
 
 ```{r load_dataset}
-disputed_data <- (read.csv("Files/Disputed_Essay_data.csv"))
+disputed_data <- (read.csv("Disputed-Essays-ClusterAnalysis_files/Disputed_Essay_data.csv"))
 #Lets see the data:
 head(disputed_data)
 ```
