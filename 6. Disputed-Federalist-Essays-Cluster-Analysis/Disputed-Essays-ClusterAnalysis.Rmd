@@ -3,7 +3,6 @@ title: "Federalist Disputed Essays Analysis - Cluster Analysis"
 author: "Bharath Karumudi"
 date: "6/3/2019"
 output:
-  pdf_document: default
   html_document:
     keep_md: yes
 ---

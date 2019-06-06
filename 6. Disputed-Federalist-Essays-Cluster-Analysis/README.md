@@ -5,7 +5,6 @@ date: "6/3/2019"
 output:
   html_document:
     keep_md: yes
-  pdf_document: default
 ---
 
 
@@ -14,7 +13,7 @@ output:
 The Federalist Paper data set (Disputed_Essay_data.CSV) is provided. The features are a set of “function words”, for example, “upon”. The feature value is the percentage of the word occurrence in an essay. For example, for the essay “Hamilton_fed_31.txt”, if the function word “upon” appeared 3 times, and the total number of words in this essay is 1000, the feature value is 3/1000=0.3%
 
 ### Objective
-Using Cluster Analysis find the Author for the disputed essays
+To find the Author for the disputed essays using Cluster Analysis: K-means and Hierarchical Clustering algorithms.
 
 ### Install Packages
 
@@ -62,7 +61,7 @@ library(factoextra)
 
 
 ```r
-disputed_data <- (read.csv("Files/Disputed_Essay_data.csv"))
+disputed_data <- (read.csv("Disputed-Essays-ClusterAnalysis_files/Disputed_Essay_data.csv"))
 #Lets see the data:
 head(disputed_data)
 ```
@@ -127,7 +126,7 @@ filtered_dataset <- filter(disputed_data, author != "Jay" & author != "HM")
 #Remove the Author column
 filtered_data_noauth<- select(filtered_dataset, -c(1))
 
-#Add Files names to the row names in the dataset
+#Add File names to the row names in the dataset
 rownames(filtered_data_noauth) <- filtered_data_noauth[,1]
 
 cleansed_data <- select(filtered_data_noauth, -c(1))
@@ -135,7 +134,7 @@ cleansed_data <- select(filtered_data_noauth, -c(1))
 cleansed_data <- na.omit(cleansed_data)
 cleansed_data <- scale(cleansed_data)
 
-#Lets see the data:
+#Lets see the cleansed data:
 head(cleansed_data)
 ```
 
@@ -263,8 +262,7 @@ fviz_cluster(km_output, data = cleansed_data)
 
 ![](Disputed-Essays-ClusterAnalysis_files/figure-html/cluster_analysis-2.png)<!-- -->
 
-From above we can conclude that the disputed essays were writted by *Madison*.
-
+From above we can conclude that the disputed essays were written by *Madison*.
 
 ### Building Cluster using HAC (Hierarchical Clustering)
 
@@ -277,75 +275,24 @@ plot(hac_output)
 ![](Disputed-Essays-ClusterAnalysis_files/figure-html/hac-1.png)<!-- -->
 
 ```r
-hac_cut <- cutree(hac_output, 12)
+hac_cut <- cutree(hac_output, 1)
 
-for (i in 1:length(hac_cut)){
-  if(hac_cut[i] != km_output$cluster[i]) print(names(hac_cut)[i])
-}
+table(hac_cut, filtered_dataset$author)
 ```
 
 ```
-## [1] "dispt_fed_50.txt"
-## [1] "dispt_fed_52.txt"
-## [1] "dispt_fed_55.txt"
-## [1] "dispt_fed_56.txt"
-## [1] "dispt_fed_57.txt"
-## [1] "Hamilton_fed_1.txt"
-## [1] "Hamilton_fed_11.txt"
-## [1] "Hamilton_fed_12.txt"
-## [1] "Hamilton_fed_13.txt"
-## [1] "Hamilton_fed_15.txt"
-## [1] "Hamilton_fed_16.txt"
-## [1] "Hamilton_fed_17.txt"
-## [1] "Hamilton_fed_21.txt"
-## [1] "Hamilton_fed_22.txt"
-## [1] "Hamilton_fed_23.txt"
-## [1] "Hamilton_fed_24.txt"
-## [1] "Hamilton_fed_25.txt"
-## [1] "Hamilton_fed_26.txt"
-## [1] "Hamilton_fed_27.txt"
-## [1] "Hamilton_fed_28.txt"
-## [1] "Hamilton_fed_29.txt"
-## [1] "Hamilton_fed_30.txt"
-## [1] "Hamilton_fed_31.txt"
-## [1] "Hamilton_fed_32.txt"
-## [1] "Hamilton_fed_33.txt"
-## [1] "Hamilton_fed_34.txt"
-## [1] "Hamilton_fed_35.txt"
-## [1] "Hamilton_fed_36.txt"
-## [1] "Hamilton_fed_59.txt"
-## [1] "Hamilton_fed_6.txt"
-## [1] "Hamilton_fed_60.txt"
-## [1] "Hamilton_fed_61.txt"
-## [1] "Hamilton_fed_65.txt"
-## [1] "Hamilton_fed_66.txt"
-## [1] "Hamilton_fed_67.txt"
-## [1] "Hamilton_fed_68.txt"
-## [1] "Hamilton_fed_69.txt"
-## [1] "Hamilton_fed_7.txt"
-## [1] "Hamilton_fed_70.txt"
-## [1] "Hamilton_fed_71.txt"
-## [1] "Hamilton_fed_72.txt"
-## [1] "Hamilton_fed_73.txt"
-## [1] "Hamilton_fed_74.txt"
-## [1] "Hamilton_fed_75.txt"
-## [1] "Hamilton_fed_76.txt"
-## [1] "Hamilton_fed_77.txt"
-## [1] "Hamilton_fed_78.txt"
-## [1] "Hamilton_fed_79.txt"
-## [1] "Hamilton_fed_8.txt"
-## [1] "Hamilton_fed_81.txt"
-## [1] "Hamilton_fed_82.txt"
-## [1] "Hamilton_fed_83.txt"
-## [1] "Hamilton_fed_84.txt"
-## [1] "Hamilton_fed_85.txt"
-## [1] "Hamilton_fed_9.txt"
-## [1] "Madison_fed_40.txt"
-## [1] "Madison_fed_47.txt"
+##        
+## hac_cut dispt Hamilton HM Jay Madison
+##       1    11       51  0   0      15
 ```
 
-From the above, we can see the model has predicted that the disputed essays are written by *Madison*
+From above results, we can see the model has predicted that the disputed essays are written by *Madison*.
 
 
 ### Conclusion
-From both the models, we can see the disputed essays are written by *Madison*
+From both the models- K-Means and HAC, we can see the disputed Federal essays are written by *Madison*.
+
+### References
+
+1. Euclidean Distance
+2. Hierarchical clustering documentation
