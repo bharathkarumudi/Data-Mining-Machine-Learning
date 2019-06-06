@@ -5,7 +5,6 @@ date: "6/2/2019"
 output:
   html_document:
     keep_md: true
-  
 ---
 
 ```{r setup, include=FALSE}
@@ -13,13 +12,10 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ### Introduction:  
-Bank data was given and need to explore the bank data (bankdata.csv) and an accompanying description of the attributes and their values (bankdataDescription.doc). 
-
-The dataset contains attributes on each person’s demographics and banking information in order to determine they will want to obtain the new PEP (Personal Equity Plan).
+A dataset of a bank was given and need to explore the bank data (bankdata.csv) and an accompanying description of the attributes and their values are available in (bankdataDescription.doc). The dataset contains attributes on each person’s demographics and banking information in order to determine they will want to obtain the new PEP (Personal Equity Plan).
 
 ### Objective:  
-Objective of this is to perform Association Rule discovery on the dataset and describe the  association rule mining process and the resulting 5 interesting rules, each with their three items of explanation and recommendations.  
-For at least one of the rules, discuss the support, confidence and lift values and how they are interpreted in this data set.
+Objective is to perform Association Rule discovery on the dataset and describe the association rule mining process and the resulting 5 interesting rules, each with their three items of explanation and recommendations. For at least one of the rules, discuss the support, confidence and lift values and how they are interpreted in this data set.
 
 ### Install Required Packages:  
 ```{r packages, results='hide'}
@@ -61,8 +57,8 @@ rule1 <- apriori(data = data, parameter = list(minlen=2, maxlen=100, supp = 0.05
 inspect(head(sort(rule1, by="lift", decreasing = T), 5))
 ```
 
-### Findings and Recommendations:  
-Below are the five findings and recommendations from the association rule data mining. 
+### Findings and Conclusion:  
+Below are the five findings from the association rule data mining. 
 
 #### #1.  
 
@@ -99,7 +95,6 @@ If the customer is married, No children, having Savings Account and No mortgage,
   
   **Recommendation:** We will need to increase awareness and educate customers of this nature about - the need to invest in equities, the profits and benefits for their future. This will help us target that whole demographics of customers who have not purchased the PEP product yet, but will start doing it.
   
-  
 #### #4. 
 
 If the customer is a Married Female with No children and No mortgage, then also it is more likely Not to purchase a PEP product.
@@ -127,7 +122,8 @@ inspect(head(sort(rule3, by="count", decreasing = T), 5))
   Both above patterns have similar association. We can see that these patterns, where the customer has a child and has either current account or savings account have a more likely tendency to buy the PEP product. As, the attributes have a strong relationship (~84%) and fair probability of occurance (~14%) with a preditictive power of about 1.8.
   
   **Recommendation:** It is good to concentrate on these demographics and try to increase sales marketing and promoting the product for customers with bank accounts. They seem to have a more likely nature to purchase the PEP product and have the money for investments.
-
+  
 
 ### References
-1. Apriori documentation
+1. Apriori documentation.
+2. Arules documentation.
