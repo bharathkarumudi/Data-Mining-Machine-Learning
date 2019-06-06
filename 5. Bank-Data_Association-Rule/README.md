@@ -317,6 +317,6 @@ inspect(head(sort(rule3, by="count", decreasing = T), 5))
   **Recommendation:** It is good to concentrate on these demographics and try to increase sales marketing and promoting the product for customers with bank accounts. They seem to have a more likely nature to purchase the PEP product and have the money for investments.
   
 
-### References
+### References:
 1. Apriori documentation.
 2. Arules documentation.
