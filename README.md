@@ -1,2 +1,3 @@
 # Data-Mining
-Lets Do data mining with R.
+Its all about data! 
+Data mining using R.
