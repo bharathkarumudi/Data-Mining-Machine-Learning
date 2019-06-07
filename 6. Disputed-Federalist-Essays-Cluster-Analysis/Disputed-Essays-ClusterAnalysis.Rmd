@@ -81,13 +81,31 @@ From above we can conclude that the disputed essays were written by *Madison*.
 hac_output <- hclust(dist(cleansed_data, method = "euclidean"), method = "complete")
 plot(hac_output)
 
+#hac cut at multiple levels
 hac_cut <- cutree(hac_output, 1)
+table(hac_cut, filtered_dataset$author)
 
+hac_cut <- cutree(hac_output, 2)
+table(hac_cut, filtered_dataset$author)
+
+hac_cut <- cutree(hac_output, 5)
+table(hac_cut, filtered_dataset$author)
+
+hac_cut <- cutree(hac_output, 10)
+table(hac_cut, filtered_dataset$author)
+
+hac_cut <- cutree(hac_output, 15)
+table(hac_cut, filtered_dataset$author)
+
+hac_cut <- cutree(hac_output, 20)
+table(hac_cut, filtered_dataset$author)
+
+hac_cut <- cutree(hac_output, 25)
 table(hac_cut, filtered_dataset$author)
 
 ```
 
-From above results, we can see the model has predicted that the disputed essays are written by *Madison*.
+From above results, at cut 9 shows there is no equality between disputes and Hamilton and at cut 5, we can see there is a link between disputes and Madison. Alos cuts 1 through 6, there is a link with Madison but not with Hamiltion. From the HAC, we can conclude that the disputed essays are written by *Madison*.
 
 
 ### Conclusion

@@ -275,8 +275,8 @@ plot(hac_output)
 ![](Disputed-Essays-ClusterAnalysis_files/figure-html/hac-1.png)<!-- -->
 
 ```r
+#hac cut at multiple levels
 hac_cut <- cutree(hac_output, 1)
-
 table(hac_cut, filtered_dataset$author)
 ```
 
@@ -286,7 +286,144 @@ table(hac_cut, filtered_dataset$author)
 ##       1    11       51  0   0      15
 ```
 
-From above results, we can see the model has predicted that the disputed essays are written by *Madison*.
+```r
+hac_cut <- cutree(hac_output, 2)
+table(hac_cut, filtered_dataset$author)
+```
+
+```
+##        
+## hac_cut dispt Hamilton HM Jay Madison
+##       1    11       50  0   0      15
+##       2     0        1  0   0       0
+```
+
+```r
+hac_cut <- cutree(hac_output, 5)
+table(hac_cut, filtered_dataset$author)
+```
+
+```
+##        
+## hac_cut dispt Hamilton HM Jay Madison
+##       1    10       44  0   0      14
+##       2     1        0  0   0       0
+##       3     0        1  0   0       0
+##       4     0        1  0   0       0
+##       5     0        5  0   0       1
+```
+
+```r
+hac_cut <- cutree(hac_output, 10)
+table(hac_cut, filtered_dataset$author)
+```
+
+```
+##        
+## hac_cut dispt Hamilton HM Jay Madison
+##      1      6       15  0   0      13
+##      2      1        0  0   0       0
+##      3      1        1  0   0       1
+##      4      3       15  0   0       0
+##      5      0        1  0   0       0
+##      6      0        1  0   0       0
+##      7      0        1  0   0       0
+##      8      0       13  0   0       0
+##      9      0        2  0   0       1
+##      10     0        2  0   0       0
+```
+
+```r
+hac_cut <- cutree(hac_output, 15)
+table(hac_cut, filtered_dataset$author)
+```
+
+```
+##        
+## hac_cut dispt Hamilton HM Jay Madison
+##      1      6        2  0   0      13
+##      2      1        0  0   0       0
+##      3      1        1  0   0       1
+##      4      3        0  0   0       0
+##      5      0        1  0   0       0
+##      6      0       13  0   0       0
+##      7      0        1  0   0       0
+##      8      0        2  0   0       0
+##      9      0       11  0   0       0
+##      10     0        1  0   0       0
+##      11     0       12  0   0       0
+##      12     0        2  0   0       0
+##      13     0        2  0   0       1
+##      14     0        2  0   0       0
+##      15     0        1  0   0       0
+```
+
+```r
+hac_cut <- cutree(hac_output, 20)
+table(hac_cut, filtered_dataset$author)
+```
+
+```
+##        
+## hac_cut dispt Hamilton HM Jay Madison
+##      1      2        1  0   0       7
+##      2      1        0  0   0       0
+##      3      1        1  0   0       1
+##      4      4        1  0   0       6
+##      5      3        0  0   0       0
+##      6      0        1  0   0       0
+##      7      0        3  0   0       0
+##      8      0       10  0   0       0
+##      9      0        1  0   0       0
+##      10     0        2  0   0       0
+##      11     0       11  0   0       0
+##      12     0        1  0   0       0
+##      13     0        8  0   0       0
+##      14     0        2  0   0       0
+##      15     0        4  0   0       0
+##      16     0        2  0   0       0
+##      17     0        1  0   0       0
+##      18     0        1  0   0       0
+##      19     0        1  0   0       0
+##      20     0        0  0   0       1
+```
+
+```r
+hac_cut <- cutree(hac_output, 25)
+table(hac_cut, filtered_dataset$author)
+```
+
+```
+##        
+## hac_cut dispt Hamilton HM Jay Madison
+##      1      1        1  0   0       5
+##      2      1        0  0   0       0
+##      3      1        0  0   0       2
+##      4      1        1  0   0       1
+##      5      4        1  0   0       6
+##      6      3        0  0   0       0
+##      7      0        1  0   0       0
+##      8      0        3  0   0       0
+##      9      0       10  0   0       0
+##      10     0        1  0   0       0
+##      11     0        2  0   0       0
+##      12     0        2  0   0       0
+##      13     0        1  0   0       0
+##      14     0        5  0   0       0
+##      15     0        5  0   0       0
+##      16     0        1  0   0       0
+##      17     0        3  0   0       0
+##      18     0        4  0   0       0
+##      19     0        2  0   0       0
+##      20     0        1  0   0       0
+##      21     0        1  0   0       0
+##      22     0        1  0   0       0
+##      23     0        4  0   0       0
+##      24     0        1  0   0       0
+##      25     0        0  0   0       1
+```
+
+From above results, at cut 9 shows there is no equality between disputes and Hamilton and at cut 5, we can see there is a link between disputes and Madison. Alos cuts 1 through 6, there is a link with Madison but not with Hamiltion. From the HAC, we can conclude that the disputed essays are written by *Madison*.
 
 
 ### Conclusion
