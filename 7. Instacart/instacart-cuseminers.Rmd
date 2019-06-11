@@ -1,6 +1,6 @@
 ---
 title: "Instacart"
-author: "CuseMiners - Bharath, Don, Gretchen, Holley."
+author: "CuseMiners"
 date: "6/11/2019"
 output:
   html_document:
