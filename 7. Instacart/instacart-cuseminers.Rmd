@@ -1,0 +1,497 @@
+---
+title: "Instacart"
+author: "CuseMiners - Bharath, Don, Gretchen, Holley."
+date: "6/11/2019"
+output:
+  html_document:
+    keep_md: yes
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Introduction
+
+The data we are exploring is a set of over three million Instacart grocery shopping transactions that have been made publicly available [1]. 
+
+The data includes orders with many attributes including; day of week, hour of the day, days since last order, and an evaluation identifier. Since the data set is designed for mining education and training, each order has been designated to the purpose of training, testing, and prior orders. There are nearly two-hundred thousand training records in the set which is a very large amount to process with a personal computer, so we plan to do random samplings of one-thousand records between ten and twenty times to train the models we use to make predictions
+
+Plan is to make recommendations about staffing based on purchase time and day of the week so in order to use decision trees or random forest the data will need to be categorized to the time of day; day (7a - 3p), evening (3p - 11p), overnight (11p - 7a). The data will also need to be aggregated to determine customer value, by selecting a specific period of time for example 90 days, so that the highest dollar value ordering individuals can be identified to draw conclusions about shopping patterns. 
+
+At this point, we know that our primary strategies will be to use decision trees, random forests, and other techniques learned in class to make grouping or classification decisions from the training data to make predictions about the test data about those classifications. 
+
+### Install Required packages
+```{r setup_env}
+#install.packages('dplyr')
+#install.packages('ggplot2')
+#install.packages('arulesViz')
+#install.packages('caret')
+#install.packages('e1071')
+```
+
+### Load Required Libraries
+```{r load_libs, warning=FALSE, results='hide'}
+library(plyr)
+library(dplyr)
+library(magrittr)
+library(knitr)
+library(ggplot2)
+library(arules)
+library(arulesViz)
+library(nnet)
+library(lattice)
+library(caret)
+library(e1071)
+library(readr)
+library(klaR)
+```
+
+### Load Datasets
+```{r load_datasets, results='hide'}
+orders <- read.csv('instacart-cuseminers_files/dataset/orders.csv')
+products <- read.csv('instacart-cuseminers_files/dataset/products.csv')
+order_products <- read.csv('instacart-cuseminers_files/dataset/order_products__train.csv')
+order_products_prior <- read.csv('instacart-cuseminers_files/dataset/order_products__prior.csv')
+order_products_train <- read.csv('instacart-cuseminers_files/dataset/order_products__train.csv')
+aisles <- read.csv('instacart-cuseminers_files/dataset/aisles.csv')
+departments <- read.csv('instacart-cuseminers_files/dataset/departments.csv')
+train_orders_orig <- filter(orders, eval_set == "train")
+test_orders_orig <- filter(orders, eval_set == "prior")
+```
+
+### Lets see the data
+```{r view_data}
+dim(orders); kable(head(orders,10))
+
+dim(order_products); kable(head(order_products, 10))
+
+dim(products); kable(head(products,10))
+
+dim(order_products_prior); kable(head(order_products_prior,10))
+
+dim(aisles); kable(head(aisles,10))
+
+dim(departments); kable(head(departments, 10))
+
+```
+
+
+### Data Cleansing
+```{r data_factoring, warning=FALSE}
+#Factoring
+orders <- orders %>% mutate(order_hour_of_day = as.numeric(order_hour_of_day), eval_set = as.factor(eval_set))
+products <- products %>% mutate(product_name = as.factor(product_name))
+aisles <- aisles %>% mutate(aisle = as.factor(aisle))
+departments <- departments %>% mutate(department = as.factor(department))
+```
+
+
+### Data Visualizations
+
+1. Lets see in which hours the orders are placed.
+```{r hour_orders, warning=FALSE }
+orders %>%
+  ggplot(aes(x=order_hour_of_day)) +
+  geom_histogram(stat="count",fill="blue")
+
+```
+
+From above, we can see the orders are getting increased from 8 AM until 6 PM, with peak hours as 10 and 11 AM.
+
+2. Lets see on which day
+
+```{r day_orders, warning=FALSE}
+orders %>% 
+  ggplot(aes(x=order_dow)) + 
+  geom_histogram(stat="count",fill="blue")
+
+```
+This shows, the most of the orders are on 0 and 1 (Saturday and Sunday).
+
+***From above two visualizations, we can conclude, we need full staff to be available on Weekends and also during 8 AM - 6 PM as primary shift***
+  
+  
+  3. Reorder frequency 
+
+```{r reorder_freq, warning=FALSE}
+orders %>% 
+  ggplot(aes(x=days_since_prior_order)) + 
+  geom_histogram(stat="count",fill="blue")
+
+```
+
+We can see the reorder frequency for most of the customers is seven and 30 days.
+
+4. Find the best seller
+
+```{r best_seller, warning=FALSE}
+best_sellers <- order_products %>% 
+  group_by(product_id) %>% 
+  summarize(count = n()) %>% 
+  top_n(10, wt = count) %>%
+  left_join(dplyr::select(products,product_id,product_name),by="product_id") %>%
+  arrange(desc(count)) 
+kable(best_sellers)
+
+best_sellers %>% 
+  ggplot(aes(x=reorder(product_name,-count), y=count))+
+  geom_bar(stat="identity",fill="blue")+
+  theme(axis.text.x=element_text(angle=20, hjust=1),axis.title.x = element_blank())
+
+```
+
+***Bananas*** is the best selling product from the store.
+
+
+### Customer Reordering Frequency
+
+```{r reorder_gap, warning=FALSE}
+
+#Visualizing reordering Gap
+Reordering_Gap_plot<-ggplot(train_orders_orig,aes(x=days_since_prior_order))+
+  geom_histogram(aes(fill=..count..),binwidth=1)+
+  scale_x_continuous(name = "Days Since Prior Order",breaks = seq(0, 30, 1))+
+  scale_y_continuous(name = "Frequency of Orders",breaks=seq(0,1000000,100000))+
+  ggtitle("Gap between two orders?")+
+  labs(x="Days Since Prior Order")+
+  theme_update()
+Reordering_Gap_plot
+```
+Looking at above data we see that majority of customers order weekly, biweekly, monthly so we need to categorize them appropriately.
+
+```{r reorder_category, warning=FALSE}
+
+train_orders <- train_orders_orig %<>%
+  mutate(wk_mth=case_when(
+    days_since_prior_order %in% 1:7 ~ "Weekly",
+    days_since_prior_order %in% 8:14 ~ "Biweekly",
+    days_since_prior_order %in% 15:30 ~ "Monthly"
+  ))
+
+head(train_orders)
+
+test_orders <- test_orders_orig %<>%
+  mutate(wk_mth=case_when(
+    days_since_prior_order %in% 1:7 ~ "Weekly",
+    days_since_prior_order %in% 8:14 ~ "Biweekly",
+    days_since_prior_order %in% 15:30 ~ "Monthly"
+  ))
+head(test_orders)
+```
+
+
+```{r order_factor, warning=FALSE}
+# Create factor for weekly, biweekly, monthly
+str(train_orders)
+str(test_orders)
+
+# train_orders <- train_orders %>% mutate(order_hour_of_day = as.numeric(order_hour_of_day), wk_mth = as.factor(wk_mth))
+train_orders$wk_mth <- as.factor(train_orders$wk_mth)  # As Category
+test_orders$wk_mth <- as.factor(test_orders$wk_mth)
+# All the other columns are numeric.
+```
+
+### Modelling with Neural Net
+
+```{r neural_net, message=FALSE, results='hide'}
+# train model with neural networks
+
+TrainingParameters <- trainControl(method = "repeatedcv", number = 10, repeats=10)
+
+NNModel <- train(train_orders[,-8], train_orders$wk_mth,
+                   method = "nnet",
+                  trControl= TrainingParameters,
+                  preProcess=c("scale","center"),
+                  na.action = na.omit
+ )
+```
+
+```{r NN_evaluation, warning=FALSE}
+NNModel
+NNPredictions <-predict(NNModel, test_orders,)
+
+# Create confusion matrix
+cmNN <-confusionMatrix(NNPredictions, test_orders$wk_mth)
+print(cmNN)
+```
+
+*From above, we can estimate the marketing communications on the customer ordering frequency and predict the future orders.*
+
+### Product Associations (Market-Basket Analysis)
+
+```{r data_mapping, warning=FALSE}
+
+#attaching product id to orders
+prod_prior_names <- join(order_products_prior, products, by='product_id', type='left', match='all')
+prod_train_names <- join(order_products_train, products, by='product_id', type='left', match='all')
+
+#attaching department name to each product
+prod_prior_dept <- join(prod_prior_names, departments, by='department_id', type='left', match='all')
+prod_train_dept <- join(prod_train_names, departments, by='department_id', type='left', match='all')
+
+#attaching aisle_id to product
+prod_prior_dept_ai <- join(prod_prior_dept, aisles, by='aisle_id', type='left', match='all')
+prod_train_dept_ai <- join(prod_train_dept, aisles, by='aisle_id', type='left', match='all')
+
+#attaching the order and user information to the products ordered
+prod_prior_orders <- join(prod_prior_dept_ai, orders, by='order_id', type='left', match='all')
+prod_train_orders <- join(prod_train_dept_ai, orders, by='order_id', type='left', match='all')
+
+#save final data frame in R data system
+saveRDS(prod_prior_orders, "prior.rds")
+saveRDS(prod_train_orders, "train.rds")
+
+#save the data frame into csv files
+write.csv(prod_prior_orders, "prior.csv")
+write.csv(prod_train_orders, "train.csv")
+
+prior_sorted <- prod_prior_orders[order(prod_prior_orders$order_id),]
+
+```
+
+
+```{r association_rules, warning=FALSE}
+
+itemList <- ddply(prior_sorted,c("order_id"), 
+                  function(df1)paste(df1$product_name, 
+                                     collapse = "|"))
+itemList$order_id <- NULL
+colnames(itemList) <- c("items")
+#write.csv(itemList, "basket.csv", quote=FALSE, row.names = TRUE)
+write.table(itemList, "basket.csv", quote=FALSE, row.names = TRUE, sep = "|" )
+
+#Read Transactions
+transactions <- read.transactions('basket.csv', format = 'basket', quote="", sep='|')
+transactions
+summary(transactions)
+itemFrequencyPlot(transactions, topN=20, type='absolute')
+
+#Build Rules with atleast confidence of 70% and support of 0.0001555 (500 Transactions).
+rules <- apriori(transactions, parameter = list(supp=0.0001555, conf=0.7, minlen=2, maxtime=120))
+rules <- sort(rules, by='lift', decreasing = TRUE)
+summary(rules)
+
+#Lets see the top 20 rules.
+cat('Top 20 product association rules:')
+inspect(rules[1:20])
+
+#Lets take top 10 rules and create a plot.
+topRules <- rules[1:10]
+plot(topRules, method="graph")
+```
+Using the above rules, we can suggest user to buy another product as frequently brought together.
+
+
+
+### Analysis on Add to cart order
+
+```{r data_prep, warning=FALSE, results='hide'}
+#Prepare Data
+
+#use sample data entries for initial training and testing
+orderProductsTrain_head <- head(order_products_train, 200)
+orderProductsPrior_head <- head(order_products_prior, 200)
+#remove reordered column
+orderProductsTrain_head <- orderProductsTrain_head[,-4]
+orderProductsPrior_head <- orderProductsPrior_head[,-4]
+
+#summarize the number of unique products per order
+#this gives us an idea of cart size
+orderProductsTrain_head %>% 
+  group_by(order_id) %>% 
+  summarise(products_in_cart = max(add_to_cart_order)) -> 
+  totalProductsInCart
+
+#function to find total number of products in transaction
+totalProductCount_train <- function() {
+  count <- aggregate(
+    orderProductsTrain_head$add_to_cart_order, 
+    by=list(orderProductsTrain_head$order_id), 
+    max)
+  return(count)
+}
+
+totalProductCount_prior <- function() {
+  count <- aggregate(
+    orderProductsPrior_head$add_to_cart_order, 
+    by=list(orderProductsPrior_head$order_id), 
+    max)
+  return(count)
+}
+
+#combine all products into one row per order  
+orderProductsTrain_head_reshaped <- 
+  reshape(orderProductsTrain_head, 
+          idvar = "order_id", 
+          timevar = "add_to_cart_order", 
+          direction = "wide")
+
+orderProductsPrior_head_reshaped <- 
+  reshape(orderProductsPrior_head, 
+          idvar = "order_id", 
+          timevar = "add_to_cart_order", 
+          direction = "wide")
+
+
+#add a column for total product count per order
+orderProductsTrain_head_reshaped$total_products <- 
+  with(orderProductsTrain_head, 
+       #totalProductCount(order_id)
+       totalProductCount_train())
+       #4)
+
+orderProductsPrior_head_reshaped$total_products <- 
+  with(orderProductsPrior_head, 
+       #totalProductCount(order_id)
+       totalProductCount_prior())
+       #4)
+
+
+#this takes the subcolumn needed and overwrites
+#the total_products with it
+orderProductsTrain_head_reshaped$total_products <- orderProductsTrain_head_reshaped$total_products#$x
+orderProductsPrior_head_reshaped$total_products <- orderProductsPrior_head_reshaped$total_products#$x
+
+#create column that holds the name of the 
+#last product column for each order
+orderProductsTrain_head_reshaped$last_product_colname <-
+  with(orderProductsTrain_head_reshaped,
+       paste0("product_id.", 
+              orderProductsTrain_head_reshaped$total_products$x))
+
+orderProductsPrior_head_reshaped$last_product_colname <-
+  with(orderProductsPrior_head_reshaped,
+       paste0("product_id.", 
+              orderProductsPrior_head_reshaped$total_products$x))
+
+
+#print(nrow(orderProductsTrain_head_reshaped))
+#print(nrow(orderProductsPrior_head_reshaped))
+
+#for each order, move the last product added to the
+#"last product" column
+for(i in rownames(orderProductsTrain_head_reshaped)) {
+  #print(i)
+  prodColVal <- orderProductsTrain_head_reshaped[i, "last_product_colname"]
+  #print(prodColVal)
+  
+  orderProductsTrain_head_reshaped[i, "last_product_ordered"] <-
+    orderProductsTrain_head_reshaped[i, prodColVal]
+  
+  #orderProductsTrain_head_reshaped[i, "last_product_ordered"]
+}
+
+for(i in rownames(orderProductsPrior_head_reshaped)) {
+  #print(i)
+  prodColVal <- orderProductsPrior_head_reshaped[i, "last_product_colname"]
+  #print(prodColVal)
+  
+  orderProductsPrior_head_reshaped[i, "last_product_ordered"] <-
+    orderProductsPrior_head_reshaped[i, prodColVal]
+  
+  #orderProductsPrior_head_reshaped[i, "last_product_ordered"]
+}
+
+
+#orderProductsPrior_head_reshaped$last_product_ordered
+
+df_orderProductsTrain <- orderProductsTrain_head_reshaped
+df_orderProductsPrior <- orderProductsPrior_head_reshaped
+
+df_orderProductsTrain <- df_orderProductsTrain[,-grep("last_product_colname", colnames(df_orderProductsTrain))]
+df_orderProductsTrain <- df_orderProductsTrain[,-grep("total_products", colnames(df_orderProductsTrain))]
+df_orderProductsPrior <- df_orderProductsPrior[,-grep("last_product_colname", colnames(df_orderProductsPrior))]
+df_orderProductsPrior <- df_orderProductsPrior[,-grep("total_products", colnames(df_orderProductsPrior))]
+
+colnames_train <- colnames(df_orderProductsTrain)
+colnames_prior <- colnames(df_orderProductsPrior)
+
+#typeof(colnames_train)
+
+#print(colnames_train)
+#print(colnames_prior)
+
+n <- products$product_id
+c <- as.character(n)
+
+#convert all product columns to factors
+for(col in colnames(df_orderProductsTrain[,-1])) {
+  #print(typeof(col))
+  #print(col)
+}
+
+for(col in colnames(df_orderProductsPrior[,-1])) {
+  #col <- as.factor(products$product_id)
+  #col <- as.character(products$product_id)
+  #col <- as.character(col)
+  #col <- as.factor(col)
+  #print(typeof(c))
+  #print(typeof(col))
+  #print(col)
+}
+
+#train joins
+prodcol_train <- ncol(df_orderProductsTrain[,-c(1, ncol(df_orderProductsTrain))])
+delprodname_train <- sum(prodcol_train, 3)
+delaisleid_train <- sum(prodcol_train, 4)
+deldepid_train <- sum(prodcol_train, 5)
+
+for(i in 1:prodcol_train) {
+  #print(i)
+  prodnum <- paste("product_id.", i, sep = "")
+  df_orderProductsTrain <- left_join(df_orderProductsTrain, products, by=setNames(nm=prodnum, "product_id"))
+  df_orderProductsTrain[, sum(i, 1)] <- df_orderProductsTrain$product_name
+  df_orderProductsTrain <- df_orderProductsTrain[,-c(delprodname_train, delaisleid_train, deldepid_train)]
+}
+
+df_orderProductsTrain <- left_join(df_orderProductsTrain, products, by=setNames(nm="last_product_ordered", "product_id"))
+df_orderProductsTrain[, sum(prodcol_train, 2)] <- df_orderProductsTrain$product_name
+df_orderProductsTrain <- df_orderProductsTrain[,-c(delprodname_train, delaisleid_train, deldepid_train)]
+
+#prior joins
+prodcol_prior <- ncol(df_orderProductsPrior[,-c(1, ncol(df_orderProductsPrior))])
+delprodname_prior <- sum(prodcol_prior, 3)
+delaisleid_prior <- sum(prodcol_prior, 4)
+deldepid_prior <- sum(prodcol_prior, 5)
+
+for(i in 1:prodcol_prior) {
+  prodnum <- paste("product_id.", i, sep = "")
+  df_orderProductsPrior <- left_join(df_orderProductsPrior, products, by=setNames(nm=prodnum, "product_id"))
+  df_orderProductsPrior[, sum(i, 1)] <- df_orderProductsPrior$product_name
+  df_orderProductsPrior <- df_orderProductsPrior[,-c(delprodname_prior, delaisleid_prior, deldepid_prior)]
+}
+
+df_orderProductsPrior <- left_join(df_orderProductsPrior, products, by=setNames(nm="last_product_ordered", "product_id"))
+df_orderProductsPrior[, sum(prodcol_prior, 2)] <- df_orderProductsPrior$product_name
+df_orderProductsPrior <- df_orderProductsPrior[,-c(delprodname_prior, delaisleid_prior, deldepid_prior)]
+
+trainTransactions <- dplyr::select(df_orderProductsTrain,-c("order_id"))
+
+write.table(trainTransactions, "basket_train.csv", quote=FALSE, row.names = TRUE, sep = "|" )
+basket_transaction_table_train <- read.transactions('basket_train.csv', format = 'basket', quote="", sep='|')
+
+#print(basket_transaction_table_train[1])
+#print(basket_transaction_table_train[2])
+```
+
+##### Lets see the associations:
+```{r cart_priori_rules, warning=FALSE}
+
+cart_rules <- apriori(trainTransactions, 
+                    parameter = list(supp=0.05, conf=0.5, minlen=2, maxlen=5))
+
+cart_rules <- sort(cart_rules, decreasing=TRUE, by="confidence")
+
+inspect(head(cart_rules, 10))
+summary(cart_rules)
+
+plot(cart_rules[1:10], method="graph")
+
+````
+
+Using the above association rules, we can suggest customer with the next item that can be added to the the cart.
+
+
+### References
+1. Instacart Website: https://www.instacart.com/datasets/grocery-shopping-2017 on May 1, 2019
