@@ -1,3 +1,3 @@
 # Data-Mining
 Its all about data! 
-Data mining using R.
+Data mining and Machine Learning.
